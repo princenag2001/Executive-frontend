@@ -32,23 +32,30 @@ export default class ApiClass {
     // GET request (API to fetch data)
     static getNodeRequest(apiUrl, isToken = true, headers = null, params = null) {
         return axios
-            .get(this.nodeUrl + apiUrl, this.config(isToken, headers, params))
+            .get(this.nodeUrl + apiUrl, {
+                ...this.config(isToken, headers, params),
+                withCredentials: true // ✅ Ensure credentials are included
+            })
             .then((result) => {
                 return result;
             })
             .catch((error) => {
-                if (error.response && error.response.status === 401) {
-                    this.unauthenticateRedirect(); // Handle unauthorized errors by redirecting to login
-                }
+                // if (error.response && error.response.status === 401) {
+                //     this.unauthenticateRedirect(); // Handle unauthorized errors by redirecting to login
+                // }
                 throw error; // Rethrow error if it's not a 401 error
             });
     }
-
+    
     // POST request (API to send data)
     static postNodeRequest(apiUrl, isToken = true, formData = null, headers = null, params = null) {
         console.log(this.nodeUrl + apiUrl, formData, this.config(isToken, headers, params));
+    
         return axios
-            .post(this.nodeUrl + apiUrl, formData, this.config(isToken, headers, params))
+            .post(this.nodeUrl + apiUrl, formData, {
+                ...this.config(isToken, headers, params),
+                withCredentials: true,  // ✅ Ensure cookies are sent/received
+            })
             .then((result) => {
                 return result;
             })
@@ -59,11 +66,15 @@ export default class ApiClass {
                 throw error; // Rethrow error if it's not a 401 error
             });
     }
+    
 
     // PUT request (API to update data)
     static putNodeRequest(apiUrl, isToken = true, formData = null, headers = null, params = null) {
         return axios
-            .put(this.nodeUrl + apiUrl, formData, this.config(isToken, headers, params))
+            .put(this.nodeUrl + apiUrl, formData, {
+                ...this.config(isToken, headers, params),
+                withCredentials: true, // ✅ Ensure cookies are sent
+            })
             .then((result) => {
                 return result;
             })
@@ -74,6 +85,7 @@ export default class ApiClass {
                 throw error; // Rethrow error if it's not a 401 error
             });
     }
+    
 
     // DELETE request (API to delete data)
     static deleteNodeRequest(apiUrl, isToken = true, headers = null, params = null) {

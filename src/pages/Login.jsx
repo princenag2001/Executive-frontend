@@ -1,117 +1,91 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import socket from "../lib/socket"; // Import global socket instance
+import ApiClass from "../api";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic form validation
     if (!email || !password) {
-      setError('Please fill out both fields');
+      toast.error("Please fill out both fields");
       return;
     }
 
     try {
-      // Make API request to the backend
-      const response = await axios.post('http://localhost:3009/api/auth/login', { email, password });
+      const response = await ApiClass.postNodeRequest(
+        "/api/auth/login",
+        true,
+        { email, password },
+        { withCredentials: true }
+      );
 
-      if (response.data.token) {
-        alert('Login successful!');
-        // Optionally store the JWT token in localStorage or sessionStorage
-        localStorage.setItem('token', response.data.token);
-        // Redirect user to another page after login
-        window.location.href = '/dashboard'; // Example redirect
+      if (response.data.userData) {
+        // Save user & token
+        localStorage.setItem("user", JSON.stringify(response.data.userData));
+        localStorage.setItem("token", response.data.token);
+
+        // 🔌 Connect to Socket.IO after login
+        socket.auth = { userId: response.data.userData._id }; // Send user ID for authentication
+        socket.connect();
+
+        toast.success("Login successful!", {
+          position: "top-right",
+          autoClose: 1000,
+          onClose: () => navigate("/chatDashboard"),
+        });
       }
     } catch (error) {
-      setError('Invalid email or password');
+      toast.error("Invalid email or password");
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h1>Login Page</h1>
-      <p>This is the Login page where users can sign in.</p>
+    <div className="login-container">
+      <ToastContainer />
+      <div className="login-box">
+        <h2>Welcome Back</h2>
+        <p>Sign in to your account.</p>
 
-      {error && <p style={styles.error}>{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="login-button">Sign In</button>
+        </form>
 
-      <form onSubmit={handleSubmit}>
-        <div style={styles.inputGroup}>
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <div style={styles.inputGroup}>
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <button type="submit" style={styles.button}>
-          Log In
-        </button>
-      </form>
-
-      <p style={styles.forgotPassword}>
-        <a href="#">Forgot your password?</a>
-      </p>
+        <p className="register-text">
+          Don't have an account?{" "}
+          <span onClick={() => navigate("/register")} className="register-link">
+            Create account
+          </span>
+        </p>
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    maxWidth: '400px',
-    margin: '0 auto',
-    padding: '20px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    backgroundColor: '#f9f9f9',
-  },
-  inputGroup: {
-    marginBottom: '15px',
-  },
-  input: {
-    width: '100%',
-    padding: '8px',
-    marginTop: '5px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  button: {
-    width: '100%',
-    padding: '10px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  error: {
-    color: 'red',
-    marginBottom: '15px',
-  },
-  forgotPassword: {
-    textAlign: 'center',
-    marginTop: '10px',
-  },
 };
 
 export default Login;
